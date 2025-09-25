@@ -1,4 +1,5 @@
 import "./About.css";
+import { Link } from "react-router-dom";
 
 export default function About() {
   return (
@@ -72,8 +73,9 @@ export default function About() {
           </a>
         </div>
       </section>
-
-      <a className="back-link" href="/">← Назад</a>
+      <Link className="back-link" to="/">
+          ← Назад
+      </Link>
       <footer>© 2025 FE Basics Project</footer>
     </main>
   );
