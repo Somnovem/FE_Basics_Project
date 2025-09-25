@@ -73,7 +73,7 @@ export default function About() {
           </a>
         </div>
       </section>
-      <Link className="back-link" to="/">
+      <Link className="back-link" to="..">
           ← Назад
       </Link>
       <footer>© 2025 FE Basics Project</footer>
