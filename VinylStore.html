@@ -1,1 +1,445 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Vinyl Store — Retro Layout (Frontend-ready)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    /* Theme variables */
+    :root{ --modern-bg:#0e0e0e; --modern-surface:#1a1a1a; --modern-text:#f9f9f9; --modern-muted:#b3b3b3; --modern-accent:#e85a34; --modern-accent-2:#ff8a65; --retro-bg:#fbf6ef; --retro-surface:#1a1a1a; --retro-text:#111; --retro-muted:#7a6b5a; --retro-accent:#b85a2f; --retro-accent-2:#f2b07a; }
+    body{ font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial; margin:0; transition: background .28s, color .28s; }
+    body.modern{ --bg:var(--modern-bg); --surface:var(--modern-surface); --text:var(--modern-text); --muted:var(--modern-muted); --accent:var(--modern-accent); --accent-2:var(--modern-accent-2);}
+    body.retro{ --bg:var(--retro-bg); --surface:var(--retro-surface); --text:var(--retro-text); --muted:var(--retro-muted); --accent:var(--retro-accent); --accent-2:var(--retro-accent-2);}
+    body{ background:var(--bg); color:var(--text); }
+    .surface{ background:var(--surface); }
+    .muted{ color:var(--muted); }
+    .accent{ color:var(--accent); }
+    .btn-accent{ background:var(--accent); color:var(--surface); }
+    .btn-accent:hover{ filter:brightness(.95); }
 
+    .display{ font-family:'Playfair Display', serif; }
+
+    .record{ position:relative; border-radius:9999px; width:360px; height:360px; background: radial-gradient(circle at 50% 50%, #222 0%, #000 8%, #111 12%, rgba(0,0,0,0.95) 100%); box-shadow:0 18px 50px rgba(0,0,0,0.4); transition: transform .28s; }
+    .record .label{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:44%; height:44%; border-radius:9999px; display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;background:linear-gradient(90deg,var(--accent),var(--accent-2)); }
+    .record:hover{ transform: translateY(-8px) rotate(-2deg); }
+
+    .vinyl-thumb{ width:120px; height:120px; border-radius:9999px; background:radial-gradient(circle,#111 0%,#000 40%); display:inline-block; box-shadow:0 8px 24px rgba(0,0,0,0.2); transition: transform .28s ease; }
+    .vinyl-thumb:hover{ transform: translateY(-6px) scale(1.03); }
+
+    .spin-slow{ animation: spin 6s linear infinite; }
+    .spin-fast{ animation: spin 3s linear infinite; }
+    @keyframes spin{ from{ transform: rotate(0deg);} to{ transform: rotate(360deg);} }
+
+    .container{ max-width:1150px; margin:0 auto; padding:2rem; }
+    .section{ padding:2.5rem 0; }
+    .card{ border-radius:12px; box-shadow:0 6px 16px rgba(0,0,0,0.06); }
+
+    .fade-in{ animation: fade .28s ease both; } @keyframes fade{ from{ opacity:0; transform: translateY(6px);} to{ opacity:1; transform:none;} }
+
+    @media (max-width:768px){ .record{ width:200px; height:200px; } .vinyl-thumb{ width:88px;height:88px;} .container{ padding:1rem; } }
+
+    .muted-small{ color:var(--muted); font-size:.95rem; }
+    .topbar{ position:sticky; top:0; z-index:50; }
+    :focus{ outline: 3px solid rgba(255,160,120,0.12); outline-offset:3px; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fadeIn { animation: fadeIn 0.28s ease-out; }
+
+  </style>
+</head>
+<body class="modern">
+<header class="surface topbar">
+  <div class="container flex items-center justify-between py-4">
+    <div class="flex items-center gap-4">
+      <div class="w-12 h-12 rounded-full flex items-center justify-center display" style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:var(--surface);">V</div>
+      <div>
+        <div class="font-semibold">vinyl.store</div>
+        <div class="muted-small">collectors & lovers</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-4">
+      <nav class="hidden md:flex gap-6 muted"><a href="#new">New</a><a href="#record">Record</a><a href="#about">About</a><a href="#buyers">Buyers</a></nav>
+      <button id="cartBtn" class="px-3 py-2 rounded surface muted">Cart (<span id="cartCount">0</span>)</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- Hero -->
+  <section class="section surface">
+    <div class="container grid md:grid-cols-2 gap-8 items-center">
+      <div>
+        <h1 class="display text-4xl md:text-5xl font-bold mb-3">Record & vinyl market</h1>
+        <p class="muted-small mb-6">Expand your vinyl record collection and find the perfect second-hand or new release. Curated selection from vintage to contemporary.</p>
+        <div class="flex gap-3">
+          <input id="searchMain" type="search" placeholder="search the catalog" class="px-4 py-3 rounded w-full md:w-72 bg-[var(--surface)] text-[var(--text)] placeholder:muted-small" />
+          <button id="searchBtn" class="btn-accent px-4 py-3 rounded">Search</button>
+          <button id="previewBtn" class="px-4 py-3 rounded surface muted" title="Spin preview">Preview</button>
+        </div>
+      </div>
+      <div class="flex justify-end">
+        <div id="heroRecord" class="record" aria-hidden="true"><div class="label">45 RPM</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- New products (catalog) -->
+  <section id="new" class="section">
+    <div class="container">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold">new products</h2>
+        <div>
+          <select id="genreFilter" class="px-3 py-2 rounded surface muted">
+            <option value="all">All genres</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="catalogGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+      <div id="noResults" class="hidden mt-6 muted-small">No results found.</div>
+    </div>
+  </section>
+
+  <!-- Record row -->
+  <section id="record" class="section surface">
+    <div class="container">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-bold">record</h3>
+        <a class="muted-small" href="#">see all</a>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="card p-4 flex flex-col items-center text-center"><img src="https://picsum.photos/seed/rt1/300/180" class="w-full rounded mb-3" alt="player"><div class="font-semibold">Turntable A</div><div class="muted-small">$129</div></div>
+        <div class="card p-4 flex flex-col items-center text-center"><img src="https://picsum.photos/seed/rt2/300/180" class="w-full rounded mb-3" alt="player"><div class="font-semibold">Turntable B</div><div class="muted-small">$199</div></div>
+        <div class="card p-4 flex flex-col items-center text-center"><img src="https://picsum.photos/seed/rt3/300/180" class="w-full rounded mb-3" alt="player"><div class="font-semibold">Turntable C</div><div class="muted-small">$89</div></div>
+        <div class="card p-4 flex flex-col items-center text-center"><img src="https://picsum.photos/seed/rt4/300/180" class="w-full rounded mb-3" alt="player"><div class="font-semibold">Turntable D</div><div class="muted-small">$159</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About -->
+  <section class="section">
+    <div class="container grid md:grid-cols-3 gap-6 items-start">
+      <div class="md:col-span-1 card p-4">
+        <img src="https://picsum.photos/seed/instore/400/260" class="w-full rounded mb-3" alt="store" />
+      </div>
+      <div class="md:col-span-2">
+        <h3 class="text-2xl font-bold">vinyl.store</h3>
+        <p class="muted-small">Our online store is the place where you can find a selection of new and used records—curated with love. We ship worldwide and care about condition and packaging.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- To buyers + form -->
+  <section id="buyers" class="section surface">
+    <div class="container grid md:grid-cols-2 gap-6">
+      <div>
+        <h3 class="text-xl font-bold">to buyers</h3>
+        <p class="muted-small mb-4">Information about shipping, returns, grading and payment options.</p>
+        <ul class="space-y-2 muted-small">
+          <li>• safe & insured shipping</li>
+          <li>• condition grading explained</li>
+          <li>• payment via cards & bank transfer</li>
+        </ul>
+      </div>
+      <div>
+        <form id="inquiryForm" class="card p-4">
+          <h4 class="font-semibold mb-3">Order inquiry</h4>
+          <input name="name" placeholder="Your name" class="w-full mb-2 px-3 py-2 rounded" />
+          <input name="email" placeholder="Email" class="w-full mb-2 px-3 py-2 rounded" />
+          <textarea name="message" placeholder="Message" class="w-full mb-2 px-3 py-2 rounded"></textarea>
+          <div class="flex gap-2"><button type="submit" class="btn-accent px-4 py-2 rounded">Send</button><button type="button" id="clearForm" class="px-4 py-2 rounded surface">Clear</button></div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- Subscribe -->
+  <section class="section">
+    <div class="container grid md:grid-cols-2 gap-6 items-center">
+      <div>
+        <h3 class="text-xl font-bold">email</h3>
+        <p class="muted-small">Sign up for new arrivals and promotions.</p>
+      </div>
+      <form id="subscribeForm" class="flex gap-3">
+        <input id="subscribeEmail" type="email" placeholder="your email" class="px-4 py-3 rounded w-full" />
+        <button class="btn-accent px-4 py-3 rounded">Subscribe</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="section surface">
+    <div class="container text-center muted-small">vinyl.store@gmail.com • Terms • Privacy • © 2025</div>
+  </footer>
+</main>
+
+<!-- Modal -->
+<div id="modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-50">
+  <div class="rounded-xl max-w-2xl w-full p-6 bg-[var(--surface)]">
+    <button id="modalClose" class="ml-auto block mb-4">Close</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<div id="sidePanel" class="fixed right-6 bottom-6 z-50"></div>
+
+<script>
+  /* ================== Data & State ================== */
+  // Demo records — replace with fetch('/api/records') to connect backend
+  const DEMO = [
+    {id:101,title:'Love Session',artist:'Amor',year:1976,genre:'70s',price:24.99,cover:'https://picsum.photos/seed/1/800/800',samples:['https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'],rating:4.5,reviews:['Great']},
+    {id:102,title:'Neon Nights',artist:'Synthwave',year:1984,genre:'80s',price:18.50,cover:'https://picsum.photos/seed/2/800/800',samples:[],rating:4.2,reviews:[]},
+    {id:103,title:'Blue Notes',artist:'Classic Jazz',year:1969,genre:'jazz',price:29.00,cover:'https://picsum.photos/seed/3/800/800',samples:[],rating:4.9,reviews:[]},
+    {id:104,title:'Sunset Ride',artist:'Funk Band',year:1972,genre:'70s',price:21.00,cover:'https://picsum.photos/seed/4/800/800',samples:[],rating:4.0,reviews:[]},
+    {id:105,title:'Electric Heart',artist:'Pop Star',year:1988,genre:'80s',price:15.75,cover:'https://picsum.photos/seed/5/800/800',samples:[],rating:3.9,reviews:[]},
+    {id:106,title:'Indie Vibes',artist:'Local',year:2019,genre:'indie',price:17.20,cover:'https://picsum.photos/seed/6/800/800',samples:[],rating:4.1,reviews:[]},
+    {id:107,title:'Groove Mix',artist:'DJ',year:1979,genre:'mix',price:12.5,cover:'https://picsum.photos/seed/7/800/800',samples:[],rating:4.3,reviews:[]},
+    {id:108,title:'Placebo',artist:'Various',year:2000,genre:'rock',price:19.0,cover:'https://picsum.photos/seed/8/800/800',samples:[],rating:4.0,reviews:[]}
+  ];
+
+  const state = {
+    records: [],
+    cart: JSON.parse(localStorage.getItem('vinyl_cart')||'{}'),
+    playlist: JSON.parse(localStorage.getItem('vinyl_playlist')||'[]')
+  };
+
+  function saveState(){ localStorage.setItem('vinyl_cart', JSON.stringify(state.cart)); localStorage.setItem('vinyl_playlist', JSON.stringify(state.playlist)); updateCounts(); }
+  function updateCounts(){ document.getElementById('cartCount').textContent = Object.values(state.cart).reduce((s,n)=>s+n,0); }
+
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+  function debounce(fn,ms){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); }; }
+
+  function renderCatalog(list){
+    const catalogGrid = document.getElementById('catalogGrid');
+    const noResults = document.getElementById('noResults');
+    catalogGrid.innerHTML='';
+    if(!list.length){ noResults.classList.remove('hidden'); } else { noResults.classList.add('hidden'); }
+    list.forEach(rec=>{
+      const div=document.createElement('div'); div.className='card p-3 text-center fade-in';
+      div.innerHTML=`
+      <div class="mx-auto mb-3">
+        <div class="vinyl-thumb" style="background-image:url(${rec.cover});background-size:cover;background-position:center"></div>
+      </div>
+      <div class="font-semibold">${escapeHtml(rec.title)}</div>
+      <div class="muted-small">${escapeHtml(rec.artist)} • ${rec.year}</div>
+      <div class="mt-2 font-bold">$${rec.price.toFixed(2)}</div>
+      <div class="mt-3 flex justify-center gap-2">
+        <button class="add-btn px-3 py-1 rounded btn-accent">Add</button>
+        <button class="pl-btn px-3 py-1 rounded surface muted">＋PL</button>
+        <button class="view-btn px-3 py-1 rounded surface muted">Details</button>
+      </div>
+    `;
+      catalogGrid.appendChild(div);
+      const thumb = div.querySelector('.vinyl-thumb');
+      thumb.addEventListener('mouseenter', ()=> thumb.classList.add('spin-slow'));
+      thumb.addEventListener('mouseleave', ()=> thumb.classList.remove('spin-slow'));
+      div.querySelector('.add-btn').addEventListener('click', ()=> addToCart(rec.id,1));
+      div.querySelector('.pl-btn').addEventListener('click', ()=> togglePlaylist(rec.id));
+      div.querySelector('.view-btn').addEventListener('click', ()=> openDetails(rec.id));
+    });
+  }
+
+  /* Cart / Playlist */
+  function addToCart(id,qty=1){ state.cart[id]=(state.cart[id]||0)+qty; saveState(); renderCartPanel(); }
+  function togglePlaylist(id){ const i=state.playlist.indexOf(id); if(i>=0) state.playlist.splice(i,1); else state.playlist.push(id); saveState(); renderPlaylistPanel(); }
+
+  /* Modal with details & sample */
+  const modal=document.getElementById('modal'); const modalContent=document.getElementById('modalContent');
+  function openDetails(id){
+    const rec = state.records.find(r => r.id === id);
+    if(!rec) return;
+
+    modalContent.innerHTML = `
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fadeIn">
+      <!-- Cover -->
+      <div class="md:col-span-1 flex justify-center">
+        <div class="relative w-full max-w-xs rounded-xl overflow-hidden shadow-xl">
+          <img src="${rec.cover}" class="w-full h-full object-cover" alt="cover" />
+          <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/60 to-transparent p-3 text-white font-semibold text-center">
+            ${escapeHtml(rec.title)}
+          </div>
+        </div>
+      </div>
+
+      <!-- Info -->
+      <div class="md:col-span-2 flex flex-col justify-between">
+        <div>
+          <h3 class="text-2xl font-bold mb-1">${escapeHtml(rec.title)}</h3>
+          <p class="muted-small mb-3">${escapeHtml(rec.artist)} • ${rec.year} • ${escapeHtml(rec.genre)}</p>
+          <p class="muted-small mb-4">Опис реліза — стан платівки, notes, label info.</p>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-3 mb-4">
+          <button id="modalAdd" class="px-4 py-2 rounded-lg btn-accent transition hover:brightness-110">Add to cart — $${rec.price.toFixed(2)}</button>
+          <button id="modalPlaylist" class="px-4 py-2 rounded-lg surface muted transition hover:bg-[var(--accent)] hover:text-[var(--surface)]">Add to playlist</button>
+        </div>
+
+        <!-- Preview -->
+        <div class="mt-2">
+          <div class="text-sm font-semibold muted-small mb-2">Preview</div>
+          <div class="rounded-xl shadow-lg p-3 bg-gradient-to-r from-[var(--accent)]/10 to-[var(--accent-2)]/10 flex items-center">
+            <audio id="audioPreview" controls src="${rec.samples[0]||''}" class="w-full rounded-lg bg-[var(--surface)]" style="accent-color: var(--accent); outline:none;">
+              Your browser does not support audio preview.
+            </audio>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+
+    document.getElementById('modalAdd').addEventListener('click', () => { addToCart(rec.id, 1); closeModal(); });
+    document.getElementById('modalPlaylist').addEventListener('click', () => { togglePlaylist(rec.id); closeModal(); });
+  }
+
+  function closeModal(){ modal.classList.add('hidden'); modal.style.display='none'; }
+  document.getElementById('modalClose').addEventListener('click', closeModal); modal.addEventListener('click', (e)=>{ if(e.target===modal) closeModal(); });
+
+  /* Side Panel */
+  const sidePanel=document.getElementById('sidePanel');
+  function renderCartPanel(){
+    const items=Object.entries(state.cart).map(([id,qty])=>{ const rec=state.records.find(r=>r.id==id); return {rec,qty}; });
+    const total=items.reduce((s,it)=>s+(it.rec?.price||0)*it.qty,0);
+    sidePanel.innerHTML=`<div class="rounded-xl shadow p-4 max-w-sm bg-[var(--surface)]"><h4 class="font-bold">Cart</h4>
+    ${items.length? items.map(it=>`<div class="flex items-center gap-3 mt-3"><img src="${it.rec.cover}" class="w-12 h-12 rounded"><div class="flex-1 text-sm"><div>${escapeHtml(it.rec.title)}</div><div class="muted-small text-xs">${it.qty} × $${it.rec.price.toFixed(2)}</div></div><div><input type="number" value="${it.qty}" min="0" data-id="${it.rec.id}" class="w-16 px-2 py-1 rounded bg-[var(--surface)] text-[var(--text)] border-none focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"></div></div>`).join(''):'<div class="mt-4 muted-small">Cart is empty</div>'}
+    <div class="mt-4 font-bold">Total: $${total.toFixed(2)}</div><div class="mt-3 flex gap-2"><button id="checkoutBtn" class="px-3 py-2 rounded btn-accent">Checkout</button><button id="closeSide" class="px-3 py-2 rounded surface muted">Close</button></div></div>`;
+    sidePanel.querySelectorAll('input[type=number]').forEach(inp=> inp.addEventListener('change', ()=>{ const id=inp.dataset.id; updateCartQty(id,Number(inp.value)); }));
+    const closeSide=document.getElementById('closeSide'); if(closeSide) closeSide.addEventListener('click', ()=> sidePanel.innerHTML='');
+    const checkout=document.getElementById('checkoutBtn'); if(checkout) checkout.addEventListener('click', ()=> alert('Checkout stub — connect to /api/checkout'));
+  }
+
+  function renderPlaylistPanel(){
+    const list = state.playlist.map(id => state.records.find(r => r.id === id)).filter(Boolean);
+    sidePanel.innerHTML = `
+    <div class="rounded-xl shadow p-4 max-w-sm bg-[var(--surface)]">
+      <h4 class="font-bold">Playlist</h4>
+      ${list.length ? list.map(r => `
+        <div class="flex items-center gap-3 mt-3">
+          <img src="${r.cover}" class="w-12 h-12 rounded">
+          <div class="flex-1 text-sm">
+            ${escapeHtml(r.title)}
+            <div class="muted-small text-xs">${escapeHtml(r.artist)}</div>
+          </div>
+          <div class="flex flex-col gap-1">
+            <button data-id="${r.id}" class="playSample px-2 py-1 rounded surface muted">Play</button>
+            <button data-id="${r.id}" class="removePL px-2 py-1 rounded surface muted text-red-400 hover:text-red-600">Remove</button>
+          </div>
+        </div>
+      `).join('') : '<div class="mt-4 muted-small">Playlist empty</div>'}
+      <div class="mt-3 flex gap-2">
+        <button id="closePL" class="px-3 py-2 rounded surface muted">Close</button>
+      </div>
+    </div>
+  `;
+
+    // Play buttons
+    sidePanel.querySelectorAll('.playSample').forEach(b => {
+      b.addEventListener('click', () => {
+        const id = b.dataset.id;
+        const r = state.records.find(x => x.id == id);
+        if (r) playSample(r);
+      });
+    });
+
+    // Remove buttons
+    sidePanel.querySelectorAll('.removePL').forEach(b => {
+      b.addEventListener('click', () => {
+        const id = b.dataset.id;
+        const index = state.playlist.indexOf(Number(id));
+        if (index >= 0) {
+          state.playlist.splice(index, 1);
+          saveState();
+          renderPlaylistPanel(); // обновляем панель после удаления
+        }
+      });
+    });
+
+    // Close panel
+    const closePL = document.getElementById('closePL');
+    if (closePL) closePL.addEventListener('click', () => sidePanel.innerHTML = '');
+  }
+
+
+  function updateCartQty(id,qty){ if(qty<=0){ delete state.cart[id]; } else state.cart[id]=qty; saveState(); renderCartPanel(); }
+
+  /* Search & Filters */
+  const searchBtn = document.getElementById('searchBtn');
+  const searchMain = document.getElementById('searchMain');
+  const genreFilter = document.getElementById('genreFilter');
+
+  function applyFilter() {
+    const term = searchMain.value.trim().toLowerCase();
+    const genre = genreFilter.value;
+    const filtered = state.records.filter(r =>
+            (r.title.toLowerCase().includes(term) || r.artist.toLowerCase().includes(term)) &&
+            (genre === 'all' || r.genre === genre)
+    );
+    renderCatalog(filtered);
+  }
+
+  searchBtn.addEventListener('click', applyFilter);
+  searchMain.addEventListener('input', debounce(applyFilter, 400));
+  genreFilter.addEventListener('change', applyFilter);
+
+
+  /* Init */
+  state.records = DEMO;
+  const genres = [...new Set(DEMO.map(r=>r.genre))]; const genreSelect=document.getElementById('genreFilter');
+  genres.forEach(g=>{ const o=document.createElement('option'); o.value=g;o.textContent=g; genreSelect.appendChild(o); });
+  renderCatalog(state.records); updateCounts();
+
+  // Preview-перегляд — міняє велику платівку на обкладинку вибраного треку
+  (function(){
+    const previewBtn = document.getElementById('previewBtn');
+    const hero = document.getElementById('heroRecord');
+
+    if (!previewBtn || !hero) return;
+
+    previewBtn.addEventListener('click', () => {
+      // Якщо нема DEMO або DEMO порожній — просто анімація
+      if (!window.DEMO || !Array.isArray(DEMO) || !DEMO.length) {
+        hero.classList.add('spin-fast');
+        setTimeout(()=> hero.classList.remove('spin-fast'), 1500);
+        return;
+      }
+
+      // Візьмемо випадковий реліз із DEMO
+      const rec = DEMO[Math.floor(Math.random() * DEMO.length)];
+
+      // Зберігаємо поточну обкладинку hero
+      const originalSrc = hero.src;
+
+      // Змінюємо зображення hero на обкладинку треку
+      hero.src = rec.cover;
+      hero.classList.add('spin-fast');
+
+      // Відтворення короткого превʼю, якщо є
+      let audio = null;
+      if (rec.samples && rec.samples.length && rec.samples[0]) {
+        try {
+          audio = new Audio(rec.samples[0]);
+          audio.play().catch(()=>{});
+        } catch (e) {
+          console.warn('Audio preview error', e);
+        }
+      }
+
+      // Через 5 секунд повертаємо оригінальну обкладинку і зупиняємо звук
+      setTimeout(() => {
+        hero.classList.remove('spin-fast');
+        hero.src = originalSrc;
+        if (audio) {
+          try { audio.pause(); audio.currentTime = 0; } catch(e){}
+        }
+      }, 5000);
+    });
+  })();
+</script>
