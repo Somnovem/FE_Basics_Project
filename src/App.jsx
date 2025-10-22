@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import "./App.css";
 
 const DEMO = [
@@ -14,238 +14,296 @@ const DEMO = [
 
 export default function App() {
   const [records, setRecords] = useState(DEMO);
-  const [cart, setCart] = useState(JSON.parse(localStorage.getItem("vinyl_cart")||"{}"));
-  const [playlist, setPlaylist] = useState(JSON.parse(localStorage.getItem("vinyl_playlist")||"[]"));
-  const [searchTerm, setSearchTerm] = useState("");
-  const [genreFilter, setGenreFilter] = useState("all");
-  const [modalRecord, setModalRecord] = useState(null);
+  const [cart, setCart] = useState(() => JSON.parse(localStorage.getItem("vinyl_cart") || "{}"));
+  const [playlist, setPlaylist] = useState(() => JSON.parse(localStorage.getItem("vinyl_playlist") || "[]"));
+  const [search, setSearch] = useState("");
+  const [genre, setGenre] = useState("all");
+  const [modal, setModal] = useState(null);
+  const [sideContent, setSideContent] = useState(null);
 
   useEffect(() => { localStorage.setItem("vinyl_cart", JSON.stringify(cart)); }, [cart]);
   useEffect(() => { localStorage.setItem("vinyl_playlist", JSON.stringify(playlist)); }, [playlist]);
 
-  const addToCart = (id, qty=1) => setCart(prev => ({...prev, [id]: (prev[id]||0)+qty}));
+  const genres = useMemo(() => ["all", ...Array.from(new Set(records.map(r=>r.genre)))], [records]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return records.filter(r => {
+      if (genre !== "all" && r.genre !== genre) return false;
+      if (!q) return true;
+      return (r.title + " " + r.artist + " " + r.genre + " " + r.year).toLowerCase().includes(q);
+    });
+  }, [records, search, genre]);
+
+  const addToCart = (id, qty = 1) => {
+    setCart(prev => ({ ...prev, [id]: (prev[id] || 0) + qty }));
+    openCart();
+  };
   const updateCartQty = (id, qty) => {
-    if(qty<=0) { const c={...cart}; delete c[id]; setCart(c); }
-    else setCart(prev=>({...prev,[id]:qty}));
+    if (qty <= 0) {
+      const copy = { ...cart }; delete copy[id]; setCart(copy);
+    } else {
+      setCart(prev => ({ ...prev, [id]: qty }));
+    }
   };
-  const togglePlaylist = (id) => setPlaylist(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev,id]);
 
-  const filteredRecords = records.filter(r =>
-    (r.title.toLowerCase().includes(searchTerm.toLowerCase()) || r.artist.toLowerCase().includes(searchTerm.toLowerCase())) &&
-    (genreFilter==="all" || r.genre===genreFilter)
-  );
-  const genres = ["all", ...Array.from(new Set(DEMO.map(r=>r.genre)))];
+  const togglePlaylist = (id) => {
+    setPlaylist(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
+  };
 
-  const [sideContent, setSideContent] = useState(null);
+  const openModal = (rec) => setModal(rec);
+  const closeModal = () => setModal(null);
 
-  const openModal = (rec) => setModalRecord(rec);
-  const closeModal = () => setModalRecord(null);
-
-  const openCartPanel = () => {
-    const items = Object.entries(cart).map(([id,qty])=>({rec:records.find(r=>r.id==id),qty}));
-    const total = items.reduce((s,it)=>s+(it.rec?.price||0)*it.qty,0);
+  function openCart() {
+    const items = Object.entries(cart).map(([id,qty]) => ({ rec: records.find(r=>r.id==id), qty }));
+    const total = items.reduce((s,it)=> s + (it.rec?.price||0) * it.qty, 0);
     setSideContent(
-      <div className="rounded-xl shadow p-4 max-w-sm bg-[var(--surface)]">
-        <h4 className="font-bold">Cart</h4>
-        {items.length ? items.map(it=>(
-          <div key={it.rec.id} className="flex items-center gap-3 mt-3">
-            <img src={it.rec.cover} className="w-12 h-12 rounded"/>
-            <div className="flex-1 text-sm">
-              <div>{it.rec.title}</div>
-              <div className="muted-small text-xs">{it.qty} × ${it.rec.price.toFixed(2)}</div>
+      <div className="side-card">
+        <h4>Cart</h4>
+        {items.length ? items.map(it => (
+          <div key={it.rec.id} className="side-item">
+            <img src={it.rec.cover} alt="" className="side-thumb"/>
+            <div className="side-meta">
+              <div className="side-title">{it.rec.title}</div>
+              <div className="muted-small">{it.qty} × ${it.rec.price.toFixed(2)}</div>
             </div>
-            <input type="number" value={it.qty} min="0" onChange={e=>updateCartQty(it.rec.id,Number(e.target.value))} className="w-16 px-2 py-1 rounded bg-[var(--surface)] text-[var(--text)] border-none focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"/>
+            <input
+              type="number"
+              className="side-qty"
+              value={it.qty}
+              min="0"
+              onChange={(e)=> updateCartQty(it.rec.id, Number(e.target.value))}
+            />
           </div>
-        )) : <div className="mt-4 muted-small">Cart is empty</div>}
-        <div className="mt-4 font-bold">Total: ${total.toFixed(2)}</div>
-        <div className="mt-3 flex gap-2">
-          <button className="px-3 py-2 rounded btn-accent" onClick={()=>alert("Checkout stub")}>Checkout</button>
-          <button className="px-3 py-2 rounded surface muted" onClick={()=>setSideContent(null)}>Close</button>
+        )) : <div className="muted-small">Cart is empty</div>}
+        <div className="side-total">Total: ${total.toFixed(2)}</div>
+        <div className="side-actions">
+          <button className="btn-accent" onClick={()=> alert("Checkout (wire to /api/checkout)")}>Checkout</button>
+          <button className="btn-surface" onClick={()=> setSideContent(null)}>Close</button>
         </div>
       </div>
     );
-  };
+  }
 
-  const openPlaylistPanel = () => {
-    const list = playlist.map(id => records.find(r => r.id===id)).filter(Boolean);
+  function openPlaylist() {
+    const list = playlist.map(id => records.find(r=>r.id===id)).filter(Boolean);
     setSideContent(
-      <div className="rounded-xl shadow p-4 max-w-sm bg-[var(--surface)]">
-        <h4 className="font-bold">Playlist</h4>
-        {list.length ? list.map(r=>(
-          <div key={r.id} className="flex items-center gap-3 mt-3">
-            <img src={r.cover} className="w-12 h-12 rounded"/>
-            <div className="flex-1 text-sm">
-              {r.title}
-              <div className="muted-small text-xs">{r.artist}</div>
+      <div className="side-card">
+        <h4>Playlist</h4>
+        {list.length ? list.map(r => (
+          <div className="side-item" key={r.id}>
+            <img src={r.cover} alt="" className="side-thumb"/>
+            <div className="side-meta">
+              <div className="side-title">{r.title}</div>
+              <div className="muted-small">{r.artist}</div>
             </div>
-            <div className="flex flex-col gap-1">
-              <button onClick={()=>alert(`Play ${r.title}`)} className="playSample px-2 py-1 rounded surface muted">Play</button>
-              <button onClick={()=>{togglePlaylist(r.id)}} className="removePL px-2 py-1 rounded surface muted text-red-400 hover:text-red-600">Remove</button>
+            <div className="side-playcontrols">
+              <button className="btn-surface" onClick={()=> playSample(r)}>Play</button>
+              <button className="btn-remove" onClick={()=> togglePlaylist(r.id)}>Remove</button>
             </div>
           </div>
-        )) : <div className="mt-4 muted-small">Playlist empty</div>}
-        <div className="mt-3 flex gap-2">
-          <button onClick={()=>setSideContent(null)} className="px-3 py-2 rounded surface muted">Close</button>
-        </div>
+        )) : <div className="muted-small">Playlist is empty</div>}
+        <div className="side-actions"><button className="btn-surface" onClick={()=> setSideContent(null)}>Close</button></div>
       </div>
     );
-  };
+  }
+
+  function playSample(rec) {
+    if(!rec || !rec.samples || !rec.samples.length) {
+      alert("No sample available (demo). In production, samples[] should contain URLs.");
+      return;
+    }
+    const audio = new Audio(rec.samples[0]);
+    audio.play();
+  }
 
   return (
-    <div className="modern">
-      <header className="surface topbar">
-        <div className="container flex items-center justify-between py-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full flex items-center justify-center display" style={{background:"linear-gradient(90deg,var(--accent),var(--accent-2))", color:"var(--surface)"}}>V</div>
+    <div className="app-modern">
+      <header className="topbar surface">
+        <div className="container header-row">
+          <div className="brand">
+            <div className="brand-logo">V</div>
             <div>
-              <div className="font-semibold">vinyl.store</div>
+              <div className="brand-title">vinyl.store</div>
               <div className="muted-small">collectors & lovers</div>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <nav className="hidden md:flex gap-6 muted">
-              <a href="#new">New</a><a href="#record">Record</a><a href="#about">About</a><a href="#buyers">Buyers</a>
+
+          <div className="header-actions">
+            <nav className="nav-links">
+              <a href="#new">New</a>
+              <a href="#record">Record</a>
+              <a href="#about">About</a>
+              <a href="#buyers">Buyers</a>
             </nav>
-            <button className="px-3 py-2 rounded surface muted" onClick={openCartPanel}>
-              Cart ({Object.values(cart).reduce((s,n)=>s+n,0)})
-            </button>
+
+            <div className="header-controls">
+              <select className="filter-genre" value={genre} onChange={e=>setGenre(e.target.value)}>
+                {genres.map(g => <option key={g} value={g}>{g}</option>)}
+              </select>
+
+              <button className="btn-surface" onClick={()=> openCart()}>Cart ({Object.values(cart).reduce((s,n)=>s+n,0)})</button>
+            </div>
           </div>
         </div>
       </header>
 
       <main>
-        <section className="section surface">
-          <div className="container grid md:grid-cols-2 gap-8 items-center">
+        <section className="hero surface">
+          <div className="container hero-grid">
             <div>
-              <h1 className="display text-4xl md:text-5xl font-bold mb-3">Record & vinyl market</h1>
-              <p className="muted-small mb-6">Expand your vinyl record collection and find the perfect second-hand or new release. Curated selection from vintage to contemporary.</p>
-              <div className="flex gap-3">
-                <input type="search" placeholder="search the catalog" value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} className="px-4 py-3 rounded w-full md:w-72 bg-[var(--surface)] text-[var(--text)] placeholder:muted-small"/>
-                <button className="btn-accent px-4 py-3 rounded">Search</button>
-                <button className="px-4 py-3 rounded surface muted" title="Spin preview">Preview</button>
+              <h1 className="display hero-title">Record & vinyl market</h1>
+              <p className="muted-small hero-sub">Expand your vinyl record collection and find the perfect second-hand or new release. Curated selection from vintage to contemporary.</p>
+
+              <div className="hero-controls">
+                <input
+                  className="input-search"
+                  placeholder="search the catalog"
+                  value={search}
+                  onChange={e=>setSearch(e.target.value)}
+                  onKeyDown={(e)=> { if(e.key === 'Enter') { /* apply */ } }}
+                />
+                <button className="btn-accent" onClick={()=> {/* optional server search hook */}}>Search</button>
+                <button className="btn-surface" onClick={()=> { const rec = records[0]; if(rec) { document.getElementById('hero-record')?.classList.add('spin-fast'); setTimeout(()=> document.getElementById('hero-record')?.classList.remove('spin-fast'), 1400); }}}>Preview</button>
               </div>
             </div>
-            <div className="flex justify-end">
-              <div className="record" aria-hidden="true"><div className="label">45 RPM</div></div>
+
+            <div className="hero-art">
+              <div id="hero-record" className="record spin-slow" aria-hidden="true">
+                <div className="record-label">45 RPM</div>
+              </div>
             </div>
           </div>
         </section>
 
         <section id="new" className="section">
           <div className="container">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">new products</h2>
-              <select className="px-3 py-2 rounded surface muted" value={genreFilter} onChange={e=>setGenreFilter(e.target.value)}>
-                {genres.map(g=><option key={g} value={g}>{g}</option>)}
-              </select>
+            <div className="section-header">
+              <h2>new products</h2>
+              <div className="section-controls">
+                <select className="filter-genre" value={genre} onChange={e=>setGenre(e.target.value)}>
+                  {genres.map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+              </div>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {filteredRecords.length ? filteredRecords.map(r=>(
-                <div key={r.id} className="card p-3 text-center fade-in">
-                  <div className="mx-auto mb-3">
-                    <div className="vinyl-thumb" style={{backgroundImage:`url(${r.cover})`, backgroundSize:"cover", backgroundPosition:"center"}}/>
+
+            <div className="grid catalog-grid">
+              {filtered.length ? filtered.map(r => (
+                <article key={r.id} className="record-card">
+                  <div className="record-thumb-wrap">
+                    <div
+                      className="vinyl-thumb"
+                      role="button"
+                      tabIndex={0}
+                      onClick={()=> openModal(r)}
+                      onMouseEnter={e=> e.currentTarget.classList.add('spin-slow')}
+                      onMouseLeave={e=> e.currentTarget.classList.remove('spin-slow')}
+                      style={{ backgroundImage: `url(${r.cover})` }}
+                      aria-label={`${r.title} cover`}
+                    />
                   </div>
-                  <div className="font-semibold">{r.title}</div>
-                  <div className="muted-small">{r.artist} • {r.year}</div>
-                  <div className="mt-2 font-bold">${r.price.toFixed(2)}</div>
-                  <div className="mt-3 flex justify-center gap-2">
-                    <button className="add-btn px-3 py-1 rounded btn-accent" onClick={()=>addToCart(r.id)}>Add</button>
-                    <button className="pl-btn px-3 py-1 rounded surface muted" onClick={()=>togglePlaylist(r.id)}>＋PL</button>
-                    <button className="view-btn px-3 py-1 rounded surface muted" onClick={()=>openModal(r)}>Details</button>
+
+                  <div className="record-info">
+                    <div className="record-title">{r.title}</div>
+                    <div className="muted-small">{r.artist} • {r.year}</div>
+                    <div className="price">${r.price.toFixed(2)}</div>
                   </div>
-                </div>
-              )) : <div className="mt-6 muted-small text-center">No results found.</div>}
+
+                  <div className="record-actions">
+                    <button className="btn-accent small" onClick={()=> addToCart(r.id)}>Add</button>
+                    <button className="btn-surface small" onClick={()=> togglePlaylist(r.id)}>＋PL</button>
+                    <button className="btn-surface small" onClick={()=> openModal(r)}>Details</button>
+                  </div>
+                </article>
+              )) : <div className="muted-small empty">No results found.</div>}
             </div>
           </div>
         </section>
 
-        <section id="about" className="section surface mt-12">
-          <div className="container grid md:grid-cols-2 gap-8 items-center">
+        <section id="about" className="section surface about-section">
+          <div className="container about-grid">
             <div>
-              <h2 className="text-3xl font-bold mb-4">About Vinyl.Store</h2>
-              <p className="muted-small mb-3">Vinyl.Store is a curated marketplace for collectors and music lovers. We provide new and second-hand records from all decades, with authentic reviews and ratings.</p>
-              <p className="muted-small">Our mission is to keep vinyl culture alive and make music collecting accessible to everyone.</p>
+              <h2>About Vinyl.Store</h2>
+              <p className="muted-small">Vinyl.Store is a curated marketplace for collectors and music lovers...</p>
             </div>
-            <div className="flex justify-center">
-              <img src="https://picsum.photos/seed/about/400/400" className="rounded-xl shadow-xl"/>
+            <div className="about-visual">
+              <img src="https://picsum.photos/seed/about/400/400" alt="store" className="about-image"/>
             </div>
           </div>
         </section>
 
-        <section id="buyers" className="section mt-12">
-          <div className="container text-center">
-            <h2 className="text-3xl font-bold mb-6">Happy Buyers</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <section id="buyers" className="section buyers-section">
+          <div className="container">
+            <h2>Happy Buyers</h2>
+            <div className="buyers-grid">
               {[1,2,3,4].map(i=>(
-                <div key={i} className="rounded-xl shadow p-4 bg-[var(--surface)] flex flex-col items-center gap-2">
-                  <img src={`https://picsum.photos/seed/buyer${i}/80`} className="w-20 h-20 rounded-full"/>
+                <div key={i} className="buyer-card surface">
+                  <img src={`https://picsum.photos/seed/buyer${i}/80`} className="buyer-avatar" alt="buyer"/>
                   <div className="font-semibold">Buyer {i}</div>
-                  <div className="muted-small text-sm">"Great selection and fast delivery!"</div>
+                  <div className="muted-small">"Great selection and fast delivery!"</div>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="section surface mt-12">
-          <div className="container text-center">
-            <h2 className="text-3xl font-bold mb-4">Subscribe to Newsletter</h2>
-            <p className="muted-small mb-6">Get updates about new arrivals and exclusive offers.</p>
-            <div className="flex justify-center gap-3 flex-wrap">
-              <input type="email" placeholder="Your email" className="px-4 py-3 rounded w-64 md:w-72 bg-[var(--surface)] text-[var(--text)] placeholder:muted-small"/>
-              <button className="btn-accent px-6 py-3 rounded">Subscribe</button>
+        <section className="section surface subscribe-section">
+          <div className="container subscribe-row">
+            <div>
+              <h3>Subscribe to Newsletter</h3>
+              <p className="muted-small">Get updates about new arrivals and exclusive offers.</p>
+            </div>
+            <div className="subscribe-form">
+              <input className="input-search" placeholder="Your email" />
+              <button className="btn-accent">Subscribe</button>
             </div>
           </div>
         </section>
-        
-        <footer className="section mt-12 surface">
-          <div className="container flex flex-col md:flex-row justify-between items-center py-6">
-            <div className="muted-small">&copy; 2025 Vinyl.Store</div>
-            <div className="flex gap-4 mt-3 md:mt-0">
-              <a href="#" className="muted-small hover:accent">Instagram</a>
-              <a href="#" className="muted-small hover:accent">Facebook</a>
-              <a href="#" className="muted-small hover:accent">Twitter</a>
+
+        <footer className="section footer surface">
+          <div className="container footer-row muted-small">
+            <div>© 2025 Vinyl.Store</div>
+            <div className="footer-links">
+              <a href="#">Instagram</a>
+              <a href="#">Facebook</a>
+              <a href="#">Twitter</a>
             </div>
           </div>
         </footer>
       </main>
 
-      {modalRecord && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50" onClick={closeModal}>
-          <div className="rounded-xl max-w-2xl w-full p-6 bg-[var(--surface)]" onClick={e=>e.stopPropagation()}>
-            <button onClick={closeModal} className="ml-auto block mb-4">Close</button>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fadeIn">
-              <div className="md:col-span-1 flex justify-center">
-                <div className="relative w-full max-w-xs rounded-xl overflow-hidden shadow-xl">
-                  <img src={modalRecord.cover} className="w-full h-full object-cover" alt="cover"/>
-                  <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/60 to-transparent p-3 text-white font-semibold text-center">{modalRecord.title}</div>
-                </div>
+      {modal && (
+        <div className="modal-backdrop" onClick={closeModal}>
+          <div className="modal-card" onClick={(e)=> e.stopPropagation()}>
+            <button className="modal-close" onClick={closeModal}>Close</button>
+            <div className="modal-grid">
+              <div className="modal-cover">
+                <img src={modal.cover} alt={modal.title} />
+                <div className="modal-cover-caption">{modal.title}</div>
               </div>
-              <div className="md:col-span-2 flex flex-col justify-between">
-                <div>
-                  <h3 className="text-2xl font-bold mb-1">{modalRecord.title}</h3>
-                  <p className="muted-small mb-3">{modalRecord.artist} • {modalRecord.year} • {modalRecord.genre}</p>
-                  <p className="muted-small mb-4">Опис реліза — стан платівки, notes, label info.</p>
+              <div className="modal-details">
+                <h3>{modal.title}</h3>
+                <div className="muted-small">{modal.artist} • {modal.year} • {modal.genre}</div>
+                <p className="muted-small track-description">Опис треку: тут короткий опис треку — стиль, настрій, цікаві факти про запис або реліз.</p>
+
+                <div className="modal-actions">
+                  <button className="btn-accent" onClick={()=> { addToCart(modal.id); closeModal(); }}>Add to cart — ${modal.price.toFixed(2)}</button>
+                  <button className="btn-surface" onClick={()=> { togglePlaylist(modal.id); closeModal(); }}>Add to playlist</button>
                 </div>
-                <div className="flex gap-3 mb-4">
-                  <button className="px-4 py-2 rounded-lg btn-accent transition hover:brightness-110" onClick={()=>{addToCart(modalRecord.id); closeModal();}}>Add to cart — ${modalRecord.price.toFixed(2)}</button>
-                  <button className="px-4 py-2 rounded-lg surface muted transition hover:bg-[var(--accent)] hover:text-[var(--surface)]" onClick={()=>{togglePlaylist(modalRecord.id); closeModal();}}>Add to playlist</button>
+
+                <div className="preview-block">
+                  <div className="muted-small">Preview</div>
+                  <audio controls src={modal.samples?.[0] || ""} className="audio-control"/>
                 </div>
-                <div className="mt-2">
-                  <div className="text-sm font-semibold muted-small mb-2">Preview</div>
-                  <div className="rounded-xl shadow-lg p-3 bg-gradient-to-r from-[var(--accent)]/10 to-[var(--accent-2)]/10 flex items-center">
-                    <audio controls src={modalRecord.samples[0]||''} className="w-full rounded-lg bg-[var(--surface)]" style={{accentColor:"var(--accent)",outline:"none"}} />
-                  </div>
-                </div>
+
+                <div className="rating-block muted-small">Rating: {modal.rating} ★ — Reviews: {modal.reviews.length}</div>
               </div>
             </div>
           </div>
         </div>
       )}
       
-      {sideContent && (
-        <div className="fixed right-6 bottom-6 z-50">{sideContent}</div>
-      )}
+      {sideContent && <div className="side-panel">{sideContent}</div>}
     </div>
   );
 }
