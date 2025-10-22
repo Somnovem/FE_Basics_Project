@@ -175,98 +175,151 @@ export default function App() {
             </div>
           </div>
         </section>
-
+        
         <section id="new" className="section">
           <div className="container">
             <div className="section-header">
               <h2>new products</h2>
               <div className="section-controls">
-                <select className="filter-genre" value={genre} onChange={e=>setGenre(e.target.value)}>
+                <label htmlFor="genreFilter" className="sr-only">Genre</label>
+                <select id="genreFilter" className="filter-genre" value={genre} onChange={e => setGenre(e.target.value)}>
                   {genres.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
               </div>
             </div>
-
-            <div className="grid catalog-grid">
+            
+            <div className="grid catalog-grid" role="list">
               {filtered.length ? filtered.map(r => (
-                <article key={r.id} className="record-card">
+                <article key={r.id} className="record-card" role="listitem" aria-label={`${r.title} — ${r.artist}`}>
                   <div className="record-thumb-wrap">
                     <div
                       className="vinyl-thumb"
                       role="button"
                       tabIndex={0}
-                      onClick={()=> openModal(r)}
-                      onMouseEnter={e=> e.currentTarget.classList.add('spin-slow')}
-                      onMouseLeave={e=> e.currentTarget.classList.remove('spin-slow')}
+                      onClick={() => openModal(r)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openModal(r); }}
+                      onMouseEnter={e => e.currentTarget.classList.add('spin-slow')}
+                      onMouseLeave={e => e.currentTarget.classList.remove('spin-slow')}
                       style={{ backgroundImage: `url(${r.cover})` }}
                       aria-label={`${r.title} cover`}
-                    />
+                      />
                   </div>
-
+                  
                   <div className="record-info">
                     <div className="record-title">{r.title}</div>
                     <div className="muted-small">{r.artist} • {r.year}</div>
                     <div className="price">${r.price.toFixed(2)}</div>
                   </div>
-
+                  
                   <div className="record-actions">
-                    <button className="btn-accent small" onClick={()=> addToCart(r.id)}>Add</button>
-                    <button className="btn-surface small" onClick={()=> togglePlaylist(r.id)}>＋PL</button>
-                    <button className="btn-surface small" onClick={()=> openModal(r)}>Details</button>
+                    <button
+                      className="btn-accent small"
+                      onClick={() => addToCart(r.id)}
+                      aria-label={`Add ${r.title} to cart`}
+                      >Add</button>
+                    
+                    <button
+                      className="btn-surface small"
+                      onClick={() => togglePlaylist(r.id)}
+                      aria-pressed={playlist.includes(r.id)}
+                      aria-label={playlist.includes(r.id) ? `Remove ${r.title} from playlist` : `Add ${r.title} to playlist`}
+                      >＋PL</button>
+                    
+                    <button
+                      className="btn-surface small"
+                      onClick={() => openModal(r)}
+                      aria-label={`Open details for ${r.title}`}
+                      >Details</button>
                   </div>
                 </article>
-              )) : <div className="muted-small empty">No results found.</div>}
+    )) : (
+      <div className="muted-small empty" role="status">No results found.</div>
+    )}
             </div>
           </div>
         </section>
-
-        <section id="about" className="section surface about-section">
-          <div className="container about-grid">
-            <div>
-              <h2>About Vinyl.Store</h2>
-              <p className="muted-small">Vinyl.Store is a curated marketplace for collectors and music lovers...</p>
-            </div>
-            <div className="about-visual">
-              <img src="https://picsum.photos/seed/about/400/400" alt="store" className="about-image"/>
-            </div>
-          </div>
-        </section>
-
-        <section id="buyers" className="section buyers-section">
+        
+        <section id="record" className="section surface">
           <div className="container">
-            <h2>Happy Buyers</h2>
-            <div className="buyers-grid">
-              {[1,2,3,4].map(i=>(
-                <div key={i} className="buyer-card surface">
-                  <img src={`https://picsum.photos/seed/buyer${i}/80`} className="buyer-avatar" alt="buyer"/>
-                  <div className="font-semibold">Buyer {i}</div>
-                  <div className="muted-small">"Great selection and fast delivery!"</div>
-                </div>
-              ))}
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold">record</h3>
+              <a className="muted-small" href="#record">see all</a>
+            </div>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4" role="list">
+              {( (records.filter(r=>r.genre === 'turntable')).length ? records.filter(r=>r.genre === 'turntable') : [
+      {id:'rt1', src:"https://picsum.photos/seed/rt1/300/180", title:"Turntable A", price:129},
+      {id:'rt2', src:"https://picsum.photos/seed/rt2/300/180", title:"Turntable B", price:199},
+      {id:'rt3', src:"https://picsum.photos/seed/rt3/300/180", title:"Turntable C", price:89},
+      {id:'rt4', src:"https://picsum.photos/seed/rt4/300/180", title:"Turntable D", price:159}
+    ]).slice(0,4).map((t, i) => (
+      <div key={t.id || i} className="card" role="listitem" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter') {/* optional action */} }}>
+        <img src={t.cover || t.src} alt={t.title} />
+        <div className="font-semibold text-center" style={{paddingTop:12}}>{t.title}</div>
+        <div className="muted-small text-center" style={{paddingBottom:12}}>${(t.price).toFixed(0)}</div>
+      </div>
+    ))}
             </div>
           </div>
         </section>
 
-        <section className="section surface subscribe-section">
+        <section className="section">
+          <div className="container about-grid">
+            <div className="card" style={{ backgroundImage: "url('https://picsum.photos/seed/instore/800/520')", backgroundSize:'cover' }} />
+            <div>
+              <h3 className="text-2xl font-bold">vinyl.store</h3>
+              <p className="muted-small">Our online store is the place where you can find a selection of new and used records—curated with love. We ship worldwide and care about condition and packaging.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="buyers" className="section surface">
+          <div className="container grid md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-xl font-bold">to buyers</h3>
+              <p className="muted-small mb-4">Information about shipping, returns, grading and payment options.</p>
+              <ul className="space-y-2 muted-small">
+                <li>• safe & insured shipping</li>
+                <li>• condition grading explained</li>
+                <li>• payment via cards & bank transfer</li>
+              </ul>
+            </div>
+            
+            <div>
+              <form id="inquiryForm" className="card p-4" onSubmit={(e)=>{ e.preventDefault(); alert('Inquiry sent — integrate /api/inquiry'); e.target.reset(); }}>
+                <h4 className="font-semibold mb-3">Order inquiry</h4>
+                <input name="name" placeholder="Your name" className="w-full mb-2" />
+                <input name="email" placeholder="Email" className="w-full mb-2" />
+                <textarea name="message" placeholder="Message" className="w-full mb-2" rows={4}></textarea>
+                <div className="flex gap-2">
+                  <button type="submit" className="btn-accent">Send</button>
+                  <button type="button" id="clearForm" className="btn-surface" onClick={(e)=> e.currentTarget.closest('form').reset()}>Clear</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <section className="section">
           <div className="container subscribe-row">
             <div>
-              <h3>Subscribe to Newsletter</h3>
-              <p className="muted-small">Get updates about new arrivals and exclusive offers.</p>
+              <h3 className="text-xl font-bold">email</h3>
+              <p className="muted-small">Sign up for new arrivals and promotions.</p>
             </div>
-            <div className="subscribe-form">
-              <input className="input-search" placeholder="Your email" />
-              <button className="btn-accent">Subscribe</button>
-            </div>
+            <form className="flex gap-3" onSubmit={(e)=>{ e.preventDefault(); alert('Subscribed — wire to /api/subscribe'); }}>
+              <input id="subscribeEmail" type="email" placeholder="your email" className="input-search" required />
+              <button className="btn-accent" type="submit">Subscribe</button>
+            </form>
           </div>
         </section>
 
-        <footer className="section footer surface">
-          <div className="container footer-row muted-small">
-            <div>© 2025 Vinyl.Store</div>
-            <div className="footer-links">
-              <a href="#">Instagram</a>
-              <a href="#">Facebook</a>
-              <a href="#">Twitter</a>
+        <footer className="section mt-12 surface">
+          <div className="container flex flex-col md:flex-row justify-between items-center py-6">
+            <div className="muted-small">vinyl.store@gmail.com • Terms • Privacy • © 2025</div>
+            <div className="flex gap-4 mt-3 md:mt-0">
+              <a href="#" className="muted-small">Instagram</a>
+              <a href="#" className="muted-small">Facebook</a>
+              <a href="#" className="muted-small">Twitter</a>
             </div>
           </div>
         </footer>
