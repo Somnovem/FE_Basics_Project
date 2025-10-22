@@ -10,7 +10,6 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [genre, setGenre] = useState("all");
 
-  // Імітація DEMO даних
   useEffect(() => {
     const DEMO = [
       {
@@ -38,7 +37,6 @@ export default function App() {
     setFiltered(DEMO);
   }, []);
 
-  // 🔍 Пошук + фільтр
   useEffect(() => {
     const f = records.filter(
       (r) =>
