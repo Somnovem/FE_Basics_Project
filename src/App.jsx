@@ -74,8 +74,6 @@ export default function App() {
   );
 }
 
-/* =================== Components =================== */
-
 function Header({cartCount}) {
   return (
     <header className="surface topbar">
